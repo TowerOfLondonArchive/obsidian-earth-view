@@ -20,5 +20,9 @@
 		"obsidian": "latest",
 		"tslib": "2.4.0",
 		"typescript": "4.7.4"
+	},
+	"dependencies": {
+		"@geoman-io/leaflet-geoman-free": "^2.13.1",
+		"leaflet": "^1.9.3"
 	}
 }
