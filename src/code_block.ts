@@ -1,5 +1,5 @@
 import { MarkdownPostProcessorContext } from 'obsidian';
-import leaflet from 'leaflet';
+import * as leaflet from 'leaflet';
 import '@geoman-io/leaflet-geoman-free';
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
 
@@ -17,7 +17,7 @@ function initMap(source: string, el: HTMLElement){
 		geojson = leaflet.geoJSON(
 			JSON.parse(source),
 			{
-				pointToLayer: (feature: object, latlng: object) => {
+				pointToLayer: (feature: object, latlng: leaflet.LatLng) => {
 					return leaflet.marker(latlng, { icon: new leaflet.Icon.Default() });
 				}
 			}
@@ -37,14 +37,12 @@ function initMap(source: string, el: HTMLElement){
 	);
 
 	const map = new leaflet.Map(map_el, {
-		center: 0,
+		center: [0, 0],
 		zoom: 0,
 		zoomControl: false,
 		worldCopyJump: true,
 		maxBoundsViscosity: 1.0,
 	});
-
-	map.setView([0, 0], 0);
 
 	leaflet.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 		maxZoom: 19,
@@ -53,7 +51,6 @@ function initMap(source: string, el: HTMLElement){
 
 	geojson.addTo(map);
 
-	map.invalidateSize();
 	map.fitBounds(geojson.getBounds(), {maxZoom: 50});
 
 	map.pm.addControls({
