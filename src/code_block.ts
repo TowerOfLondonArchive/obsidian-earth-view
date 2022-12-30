@@ -15,6 +15,7 @@ export default class EarthCodeBlockManager {
 	}
 
 	async geojsonFormatter(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) {
+		let manager = this;
 		await new Promise(r => setTimeout(r, 100));
 
 		let geojson: leaflet.GeoJSON;
@@ -47,10 +48,6 @@ export default class EarthCodeBlockManager {
 			attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 		}).addTo(map);
 
-		geojson.addTo(map);
-
-		map.fitBounds(geojson.getBounds(), {maxZoom: 50});
-
 		map.pm.addControls({
 			position: 'topleft',
 			drawCircle: false,
@@ -60,21 +57,68 @@ export default class EarthCodeBlockManager {
 			drawRectangle: false
 		});
 
-		geojson.on('pm:edit', async (e) => {
+		function markDirty(){
+			let save_el = map_el.querySelector(".jgc-save")?.parentElement
+			if (save_el){
+				save_el.style.backgroundColor = "darkorange"
+			}
+		}
+
+		async function saveMap() {
+			let features: object[] = []
+			let geojson = {
+				"type": "FeatureCollection",
+				"features": features
+			};
+			map.eachLayer((layer: leaflet.Layer) => {
+				if (
+					layer instanceof leaflet.Marker ||
+					layer instanceof leaflet.CircleMarker ||
+					layer instanceof leaflet.Polyline ||
+					layer instanceof leaflet.Polygon
+				){
+					features.push(layer.toGeoJSON());
+				}
+			})
 			let selection = ctx.getSectionInfo(el);
 			if (selection){
 				let text_split = selection.text.split("\n");
 				let text_out = [
 					...text_split.slice(0, selection.lineStart+1),
-					JSON.stringify(geojson.toGeoJSON(), null, 4),
+					JSON.stringify(geojson, null, 4),
 					...text_split.slice(selection.lineEnd),
 				].join("\n");
-				console.log(text_out);
-				//console.log(text_split.slice(selection.lineStart+1, selection.lineEnd));
-				await this.plugin.app.vault.adapter.write(ctx.sourcePath, text_out);
+				await manager.plugin.app.vault.adapter.write(ctx.sourcePath, text_out);
 			}
-			// console.log();
-			// console.log(JSON.stringify(geojson.toGeoJSON(), null, 4));
+		}
+
+		map.pm.Toolbar.createCustomControl({
+			name: "save",
+			title: "save",
+			block: "custom",
+			className: "jgc-save",
+			onClick: saveMap
+		})
+
+		function registerChange(layer: leaflet.Layer){
+			layer.on('pm:edit', e => {
+				markDirty()
+			});
+			layer.on('pm:remove', e => {
+				markDirty()
+			})
+			layer.on('pm:cut', e => {
+				registerChange(e.layer);
+			})
+		}
+
+		map.on('pm:create', ({layer}) => {
+			markDirty();
+			registerChange(layer);
 		});
+		registerChange(geojson);
+
+		geojson.addTo(map);
+		map.fitBounds(geojson.getBounds(), {maxZoom: 50});
 	}
 }
