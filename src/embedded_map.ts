@@ -14,9 +14,8 @@ export default class EarthCodeBlockManager {
 		this.plugin.registerMarkdownCodeBlockProcessor("geojson", this.geojsonFormatter.bind(this));
 	}
 
-	async geojsonFormatter(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) {
+	geojsonFormatter(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) {
 		let manager = this;
-		await new Promise(r => setTimeout(r, 100));
 
 		let geojson: leaflet.GeoJSON;
 
@@ -120,5 +119,14 @@ export default class EarthCodeBlockManager {
 
 		geojson.addTo(map);
 		map.fitBounds(geojson.getBounds(), {maxZoom: 50});
+		let fit = false;
+
+		new ResizeObserver(() => {
+			map.invalidateSize();
+			if (!fit){
+				map.fitBounds(geojson.getBounds(), {maxZoom: 50});
+				fit = true;
+			}
+		}).observe(map_el);
 	}
 }
