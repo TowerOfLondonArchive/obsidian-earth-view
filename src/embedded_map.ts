@@ -1,4 +1,12 @@
-import {MarkdownPostProcessorContext} from 'obsidian';
+import {
+	MarkdownPostProcessorContext,
+	Menu,
+	Editor,
+	MarkdownView,
+	FileView,
+	MenuItem,
+	MarkdownFileInfo,
+} from 'obsidian';
 import * as leaflet from 'leaflet';
 import '@geoman-io/leaflet-geoman-free';
 import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
@@ -11,10 +19,10 @@ export default class EarthCodeBlockManager {
 
 	constructor(plugin: EarthPlugin){
 		this.plugin = plugin;
-		this.plugin.registerMarkdownCodeBlockProcessor("geojson", this.geojsonFormatter.bind(this));
+		this.plugin.registerMarkdownCodeBlockProcessor("geojson", this.#geojsonFormatter.bind(this));
 	}
 
-	geojsonFormatter(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) {
+	#geojsonFormatter(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) {
 		let manager = this;
 
 		let geojson: leaflet.GeoJSON;
@@ -43,7 +51,8 @@ export default class EarthCodeBlockManager {
 		});
 
 		leaflet.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-			maxZoom: 19,
+			maxNativeZoom: 19,
+			maxZoom: 25,
 			attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 		}).addTo(map);
 
@@ -118,13 +127,23 @@ export default class EarthCodeBlockManager {
 		registerChange(geojson);
 
 		geojson.addTo(map);
-		map.fitBounds(geojson.getBounds(), {maxZoom: 50});
+		let bounds = geojson.getBounds();
+		if (bounds.isValid()) {
+			map.fitBounds(bounds, {maxZoom: 20});
+		} else {
+			map.fitBounds(this.plugin.default_bounds)
+		}
 		let fit = false;
 
 		new ResizeObserver(() => {
 			map.invalidateSize();
 			if (!fit){
-				map.fitBounds(geojson.getBounds(), {maxZoom: 50});
+				let bounds = geojson.getBounds();
+				if (bounds.isValid()) {
+					map.fitBounds(bounds, {maxZoom: 20});
+				} else {
+					map.fitBounds(this.plugin.default_bounds)
+				}
 				fit = true;
 			}
 		}).observe(map_el);
