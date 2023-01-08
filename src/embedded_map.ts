@@ -14,12 +14,37 @@ import './styles.css'
 import EarthPlugin from './main';
 
 
+let DefaultGeoJSON = "```geojson\n{\n    \"type\": \"FeatureCollection\",\n    \"features\": []\n}\n```\n"
+let DefaultGeoJSONLineCount = (DefaultGeoJSON.match(/\n/g) || []).length;
+
+
 export default class EarthCodeBlockManager {
 	plugin: EarthPlugin;
 
 	constructor(plugin: EarthPlugin){
 		this.plugin = plugin;
 		this.plugin.registerMarkdownCodeBlockProcessor("geojson", this.#geojsonFormatter.bind(this));
+		this.plugin.app.workspace.on('editor-menu', this.#onContextMenu.bind(this));
+	}
+
+	#onContextMenu(menu: Menu, editor: Editor, view: MarkdownView | MarkdownFileInfo){
+		if (!editor) return;
+		if (view instanceof FileView) {
+			menu.addItem((item: MenuItem) => {
+				item.setTitle('Insert geoJSON');
+				item.setIcon('search');
+				item.setSection('mapview');
+				item.onClick(async () => await this.#insertGeoJSON(editor));
+			});
+		}
+	}
+
+	async #insertGeoJSON(editor: Editor){
+		editor.replaceRange(DefaultGeoJSON, editor.getCursor())
+		editor.setCursor({
+			line: editor.getCursor().line + DefaultGeoJSONLineCount,
+			ch: 0
+		})
 	}
 
 	#geojsonFormatter(source: string, el: HTMLElement, ctx: MarkdownPostProcessorContext) {
