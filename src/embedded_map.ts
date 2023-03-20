@@ -81,75 +81,77 @@ export default class EarthCodeBlockManager {
 			attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 		}).addTo(map);
 
-		map.pm.addControls({
-			position: 'topleft',
-			drawCircle: false,
-			drawPolyline: false,
-			drawCircleMarker: false,
-			drawText: false,
-			drawRectangle: false
-		});
-
-		function markDirty(){
-			let save_el = map_el.querySelector(".jgc-save")?.parentElement
-			if (save_el){
-				save_el.style.backgroundColor = "darkorange"
-			}
-		}
-
-		async function saveMap() {
-			let features: object[] = []
-			let geojson = {
-				"type": "FeatureCollection",
-				"features": features
-			};
-			map.eachLayer((layer: leaflet.Layer) => {
-				if (
-					layer instanceof leaflet.Marker ||
-					layer instanceof leaflet.CircleMarker ||
-					layer instanceof leaflet.Polyline ||
-					layer instanceof leaflet.Polygon
-				){
-					features.push(layer.toGeoJSON());
-				}
-			})
-			let selection = ctx.getSectionInfo(el);
-			if (selection){
-				let text_split = selection.text.split("\n");
-				let text_out = [
-					...text_split.slice(0, selection.lineStart+1),
-					JSON.stringify(geojson, null, 4),
-					...text_split.slice(selection.lineEnd),
-				].join("\n");
-				await manager.plugin.app.vault.adapter.write(ctx.sourcePath, text_out);
-			}
-		}
-
-		map.pm.Toolbar.createCustomControl({
-			name: "save",
-			title: "save",
-			block: "custom",
-			className: "jgc-save",
-			onClick: saveMap
-		})
-
-		function registerChange(layer: leaflet.Layer){
-			layer.on('pm:edit', e => {
-				markDirty()
+		if (this.plugin.edit_mode) {
+			map.pm.addControls({
+				position: 'topleft',
+				drawCircle: false,
+				drawPolyline: false,
+				drawCircleMarker: false,
+				drawText: false,
+				drawRectangle: false
 			});
-			layer.on('pm:remove', e => {
-				markDirty()
-			})
-			layer.on('pm:cut', e => {
-				registerChange(e.layer);
-			})
-		}
 
-		map.on('pm:create', ({layer}) => {
-			markDirty();
-			registerChange(layer);
-		});
-		registerChange(geojson);
+			function markDirty() {
+				let save_el = map_el.querySelector(".jgc-save")?.parentElement
+				if (save_el) {
+					save_el.style.backgroundColor = "darkorange"
+				}
+			}
+
+			async function saveMap() {
+				let features: object[] = []
+				let geojson = {
+					"type": "FeatureCollection",
+					"features": features
+				};
+				map.eachLayer((layer: leaflet.Layer) => {
+					if (
+						layer instanceof leaflet.Marker ||
+						layer instanceof leaflet.CircleMarker ||
+						layer instanceof leaflet.Polyline ||
+						layer instanceof leaflet.Polygon
+					) {
+						features.push(layer.toGeoJSON());
+					}
+				})
+				let selection = ctx.getSectionInfo(el);
+				if (selection) {
+					let text_split = selection.text.split("\n");
+					let text_out = [
+						...text_split.slice(0, selection.lineStart + 1),
+						JSON.stringify(geojson, null, 4),
+						...text_split.slice(selection.lineEnd),
+					].join("\n");
+					await manager.plugin.app.vault.adapter.write(ctx.sourcePath, text_out);
+				}
+			}
+
+			map.pm.Toolbar.createCustomControl({
+				name: "save",
+				title: "save",
+				block: "custom",
+				className: "jgc-save",
+				onClick: saveMap
+			})
+
+			function registerChange(layer: leaflet.Layer) {
+				layer.on('pm:edit', e => {
+					markDirty()
+				});
+				layer.on('pm:remove', e => {
+					markDirty()
+				})
+				layer.on('pm:cut', e => {
+					registerChange(e.layer);
+				})
+			}
+
+			map.on('pm:create', ({layer}) => {
+				markDirty();
+				registerChange(layer);
+			});
+			registerChange(geojson);
+		}
 
 		geojson.addTo(map);
 		let bounds = geojson.getBounds();
