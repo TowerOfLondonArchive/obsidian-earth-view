@@ -37,6 +37,8 @@
 	},
 	"dependencies": {
 		"@geoman-io/leaflet-geoman-free": "^2.13.1",
+		"@turf/boolean-intersects": "^6.5.0",
+		"@turf/helpers": "^6.5.0",
 		"leaflet": "^1.9.3"
 	}
 }

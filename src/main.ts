@@ -14,7 +14,7 @@ export default class EarthPlugin extends Plugin {
 
 	onload() {
 		this.database = new Database(this);
-		this.earth_view_manager = new EarthViewManager(this, this.database);
+		this.earth_view_manager = new EarthViewManager(this);
 		this.code_block_manager = new EarthCodeBlockManager(this);
 		this.default_bounds = new LatLngBounds([51.506745,-0.079402], [51.509576,-0.073798]);
 		this.edit_mode = true;
