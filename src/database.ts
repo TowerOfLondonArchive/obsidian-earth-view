@@ -5,15 +5,18 @@ import {EventManager} from "./event";
 
 
 const geojsonCodeBlock = /^```geojson\s*$\r?\n(?<contents>.*?)^```/gsm;
+const JPGUrlPattern = /!\[\[(?<path>.*?\.jpg)]]/
 
 
 export class File {
 	tfile: TFile
 	geojson: FeatureCollection[]
+	thumbnail_path: string | null
 
-	constructor(tfile: TFile, geojson: FeatureCollection[]) {
+	constructor(tfile: TFile, geojson: FeatureCollection[], thumbnail_path: string | null) {
 		this.tfile = tfile;
-		this.geojson = geojson
+		this.geojson = geojson;
+		this.thumbnail_path = thumbnail_path;
 	}
 }
 
@@ -71,9 +74,9 @@ export class Database extends EventManager {
 
 	async #parseFile(tfile: TFile): Promise<File> {
 		// let text = await this.plugin.app.vault.cachedRead(tfile);
-		let text = await this.plugin.app.vault.adapter.read(tfile.path);
-		let file = new File(tfile, []);
-		for (let match of text.matchAll(geojsonCodeBlock)) {
+		let file_src = await this.plugin.app.vault.adapter.read(tfile.path);
+		let file = new File(tfile, [], null);
+		for (let match of file_src.matchAll(geojsonCodeBlock)) {
 			try {
 				let contents = match.groups?.contents;
 				if (!contents) {
@@ -86,6 +89,7 @@ export class Database extends EventManager {
 				new Notice("Invalid geojson in file" + tfile.path);
 			}
 		}
+		file.thumbnail_path = JPGUrlPattern.exec(file_src)?.groups?.path || null;
 		return file;
 	}
 }

@@ -223,6 +223,22 @@ class MapView extends ItemView {
 					parse_polygon(poly.getLatLngs());
 				})
 
+				if (file.thumbnail_path !== null){
+					this.plugin.app.vault.adapter.readBinary(file.thumbnail_path).then((jpg: ArrayBuffer) => {
+						let blob = new Blob([jpg], {type: "application/jpg"});
+						let blob_path = URL.createObjectURL(blob);
+						let icon = leaflet.icon({
+							iconUrl: blob_path,
+							iconSize: [30, 30],
+						})
+						markers.forEach(function (marker: leaflet.Marker){
+							if (icon !== null){
+								marker.setIcon(icon);
+							}
+						}.bind(this))
+					})
+				}
+
 				// Add click events to all markers
 				markers.forEach(function (marker: leaflet.Marker){
 					marker.on("click", async function (){
