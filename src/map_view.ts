@@ -86,35 +86,46 @@ class MapView extends ItemView {
 
 		this.map.pm.Toolbar.createCustomControl({
 			name: "edit",
-			title: "edit",
+			title: "Edit",
 			block: "custom",
-			className: "jgc-edit",
-			onClick: () => {
+			className: "leaflet-pm-icon-edit",
+			// @ts-ignore
+			afterClick: (e: any, obj: any) => {
 				if (this.user_layer !== null){
 					this.user_layer.pm.disableLayerDrag();
-					this.user_layer.pm.enable();
+					if (obj.button._button.toggleStatus){
+						this.user_layer.pm.enable();
+					} else {
+						this.user_layer.pm.disable();
+					}
 				}
 			}
 		})
 
 		this.map.pm.Toolbar.createCustomControl({
 			name: "drag",
-			title: "drag",
+			title: "Drag",
 			block: "custom",
-			className: "jgc-drag",
-			onClick: () => {
+			className: "leaflet-pm-icon-drag",
+			// @ts-ignore
+			afterClick: (e: any, obj: any) => {
 				if (this.user_layer !== null){
 					this.user_layer.pm.disable();
-					this.user_layer.pm.enableLayerDrag();
+					if (obj.button._button.toggleStatus){
+						this.user_layer.pm.enableLayerDrag();
+					} else {
+						this.user_layer.pm.disableLayerDrag();
+					}
 				}
 			}
 		})
 
 		this.map.pm.Toolbar.createCustomControl({
 			name: "remove",
-			title: "remove",
+			title: "Remove",
 			block: "custom",
-			className: "jgc-remove",
+			className: "leaflet-pm-icon-delete",
+			toggle: false,
 			onClick: () => {
 				if (this.user_layer !== null){
 					this.user_layer.remove();
