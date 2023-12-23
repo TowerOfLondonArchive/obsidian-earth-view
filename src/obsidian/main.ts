@@ -1,5 +1,5 @@
 import { Plugin } from 'obsidian';
-import './leaflet_config'
+import 'src/common/leaflet_config'
 import EarthCodeBlockManager from './embedded_map';
 import EarthViewManager from "./map_view";
 import {Database} from "./database";
