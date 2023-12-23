@@ -34,10 +34,11 @@ export class Database extends EventManager {
 
 	async #init(){
 		await Promise.all(this.plugin.app.vault.getMarkdownFiles().map(f => this.#fileCreated(f)));
-		this.plugin.app.vault.on("create", this.#fileCreated.bind(this))
-		this.plugin.app.vault.on("modify", this.#fileModified.bind(this))
-		this.plugin.app.vault.on("delete", this.#fileDeleted.bind(this))
-		this.plugin.app.vault.on("rename", this.#fileRenamed.bind(this))
+		console.log("finished scanning files.");
+		this.plugin.app.vault.on("create", this.#fileCreated.bind(this));
+		this.plugin.app.vault.on("modify", this.#fileModified.bind(this));
+		this.plugin.app.vault.on("delete", this.#fileDeleted.bind(this));
+		this.plugin.app.vault.on("rename", this.#fileRenamed.bind(this));
 	}
 
 	async #fileCreated(tfile: TAbstractFile){

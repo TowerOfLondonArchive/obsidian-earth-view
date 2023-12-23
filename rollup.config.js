@@ -14,7 +14,7 @@ if you want to view the source visit the plugins github repository
 `;
 
 export default {
-	input: 'src/main.ts',
+	input: 'src/obsidian/main.ts',
 	output: {
 		dir: process.env.BUILD === 'development' ? '.' : './dist',
 		sourcemap: isProd ? false : 'inline',
@@ -37,7 +37,6 @@ export default {
 				copy({
 					targets: [
 						{src: './manifest.json', dest: 'dist'},
-						{src: './styles.css', dest: 'dist'},
 					],
 				}),
 			]
