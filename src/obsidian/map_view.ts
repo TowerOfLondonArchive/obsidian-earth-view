@@ -95,6 +95,7 @@ class MapView extends ItemView {
 				}
 
 				resources.push({
+					title: file.title,
 					points: markers,
 					polygons: polygons,
 					get_thumbnail: get_thumbnail,

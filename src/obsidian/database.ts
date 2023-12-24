@@ -6,18 +6,14 @@ import {EventManager} from "./event";
 
 const geojsonCodeBlock = /^```geojson\s*$\r?\n(?<contents>.*?)^```/gsm;
 const JPGUrlPattern = /!\[\[(?<path>.*?\.jpg)]]/
+const TitlePattern = /\(title::\s*(?<title>.*)\s*\)/
 
 
-export class File {
-	tfile: TFile
-	geojson: FeatureCollection[]
-	thumbnail_path: string | null
-
-	constructor(tfile: TFile, geojson: FeatureCollection[], thumbnail_path: string | null) {
-		this.tfile = tfile;
-		this.geojson = geojson;
-		this.thumbnail_path = thumbnail_path;
-	}
+export interface File {
+	tfile: TFile;
+	geojson: FeatureCollection[];
+	thumbnail_path: string | null;
+	title: string | null;
 }
 
 
@@ -79,7 +75,7 @@ export class Database extends EventManager {
 	async #parseFile(tfile: TFile): Promise<File> {
 		// let text = await this.plugin.app.vault.cachedRead(tfile);
 		let file_src = await this.plugin.app.vault.adapter.read(tfile.path);
-		let file = new File(tfile, [], null);
+		let file: File = {tfile: tfile, geojson: [], thumbnail_path: null, title: ""};
 		for (let match of file_src.matchAll(geojsonCodeBlock)) {
 			try {
 				let contents = match.groups?.contents;
@@ -94,6 +90,7 @@ export class Database extends EventManager {
 			}
 		}
 		file.thumbnail_path = JPGUrlPattern.exec(file_src)?.groups?.path || null;
+		file.title = TitlePattern.exec(file_src)?.groups?.title || null;
 		return file;
 	}
 }

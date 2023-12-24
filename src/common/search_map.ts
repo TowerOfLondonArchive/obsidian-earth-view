@@ -8,6 +8,7 @@ import booleanIntersects from '@turf/boolean-intersects'
 
 
 export interface Resource {
+	title: string | null;
 	points: leaflet.Marker[];
 	polygons: leaflet.Polygon[];
 	get_thumbnail: (() => Promise<ArrayBuffer | null>);
@@ -201,7 +202,16 @@ export class SearchMap {
 
 				// Add click events to all markers
 				resource.points.forEach(function (marker: leaflet.Marker){
-					marker.on("click", resource.open_resource)
+					marker.on("click", resource.open_resource);
+					if (resource.title !== null){
+						marker.bindPopup(resource.title);
+						marker.on('mouseover', function (e) {
+							this.openPopup();
+						});
+						marker.on('mouseout', function (e) {
+							this.closePopup();
+						});
+					}
 				}.bind(this))
 				let layer = leaflet.layerGroup(resource.points, {snapIgnore: true});
 
