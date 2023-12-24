@@ -24,11 +24,13 @@ export class File {
 export class Database extends EventManager {
 	plugin: EarthPlugin
 	files: Map<string, File>
+	ready: boolean
 
 	constructor(plugin: EarthPlugin){
 		super();
 		this.plugin = plugin;
 		this.files = new Map();
+		this.ready = false;
 		this.plugin.app.workspace.onLayoutReady(this.#init.bind(this));
 	}
 
@@ -39,6 +41,7 @@ export class Database extends EventManager {
 		this.plugin.app.vault.on("modify", this.#fileModified.bind(this));
 		this.plugin.app.vault.on("delete", this.#fileDeleted.bind(this));
 		this.plugin.app.vault.on("rename", this.#fileRenamed.bind(this));
+		this.ready = true;
 	}
 
 	async #fileCreated(tfile: TAbstractFile){

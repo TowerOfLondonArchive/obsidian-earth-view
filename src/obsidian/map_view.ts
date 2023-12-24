@@ -50,7 +50,16 @@ class MapView extends ItemView {
 	}
 
 	async onOpen(){
+		this.#initMap();
+		return super.onOpen();
+	}
+
+	#initMap(){
 		let plugin = this.plugin;
+		if (!plugin.database.ready){
+			setTimeout( () => {this.#initMap()}, 500 );
+			return;
+		}
 		let resources: Resource[] = [];
 		Array.from(
 			plugin.database.files.values()
@@ -99,7 +108,6 @@ class MapView extends ItemView {
 			plugin.default_bounds,
 			resources,
 		)
-		return super.onOpen();
 	}
 
 	getViewType() {
