@@ -5,6 +5,7 @@ import {EventManager} from "./event";
 
 
 const geojsonCodeBlock = /^```geojson\s*$\r?\n(?<contents>.*?)^```/gsm;
+const PreviewPattern = /!\[\[(?<path>source\/.*?)#preview]]/
 const JPGUrlPattern = /!\[\[(?<path>.*?\.jpg)]]/
 const TitlePattern = /\(title::\s*(?<title>.*)\s*\)/
 
@@ -73,7 +74,6 @@ export class Database extends EventManager {
 	}
 
 	async #parseFile(tfile: TFile): Promise<File> {
-		// let text = await this.plugin.app.vault.cachedRead(tfile);
 		let file_src = await this.plugin.app.vault.adapter.read(tfile.path);
 		let file: File = {tfile: tfile, geojson: [], thumbnail_path: null, title: ""};
 		for (let match of file_src.matchAll(geojsonCodeBlock)) {
@@ -89,7 +89,14 @@ export class Database extends EventManager {
 				new Notice("Invalid geojson in file" + tfile.path);
 			}
 		}
-		file.thumbnail_path = JPGUrlPattern.exec(file_src)?.groups?.path || null;
+		let path = PreviewPattern.exec(file_src)?.groups?.path;
+		if (typeof path == "string"){
+			path = path + ".md";
+			try {
+				let source = await this.plugin.app.vault.adapter.read(path);
+				file.thumbnail_path = JPGUrlPattern.exec(source)?.groups?.path || null;
+			} catch (e) {}
+		}
 		file.title = TitlePattern.exec(file_src)?.groups?.title || null;
 		return file;
 	}

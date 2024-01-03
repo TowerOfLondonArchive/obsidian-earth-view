@@ -60,6 +60,7 @@ export default class EarthCodeBlockManager {
 }
 
 const JPGUrlPattern = /!\[\[(?<path>.*?\.jpg)]]/
+const PreviewPattern = /!\[\[(?<path>source\/.*?)#preview]]/
 
 class GeoJSONFormatter{
 	plugin: EarthPlugin;
@@ -194,7 +195,14 @@ class GeoJSONFormatter{
 			throw new Error("Incorrect TFile")
 		}
 		let file_src = await this.plugin.app.vault.read(thisTFile);
-		this.img_path = JPGUrlPattern.exec(file_src)?.groups?.path;
+		let path = PreviewPattern.exec(file_src)?.groups?.path;
+		if (typeof path == "string"){
+			path = path + ".md";
+			try {
+				let source = await this.plugin.app.vault.adapter.read(path);
+				this.img_path = JPGUrlPattern.exec(source)?.groups?.path;
+			} catch (e) {}
+		}
 	}
 
 	getPolygon(corners: leaflet.LatLng[] | leaflet.LatLng[][] | leaflet.LatLng[][][]): CornersT | null {
