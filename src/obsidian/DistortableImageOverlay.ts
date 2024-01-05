@@ -98,13 +98,15 @@ export class DistortableImageOverlay extends leaflet.ImageOverlay {
 
 		const image = this.getElement();
 		if (image){
+			// @ts-ignore
 			image._leaflet_pos = topLeft;
-
+			// @ts-ignore
 			image.style[leaflet.DomUtil.TRANSFORM] = [translation, warp].join(' ');
 
 			/* Set origin to the upper-left corner rather than
 			 * the center of the image, which is the default.
 			 */
+			// @ts-ignore
 			image.style[leaflet.DomUtil.TRANSFORM + '-origin'] = '0 0 0';
 		}
 

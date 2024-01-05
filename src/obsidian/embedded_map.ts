@@ -14,9 +14,6 @@ import '@geoman-io/leaflet-geoman-free/dist/leaflet-geoman.css';
 import './styles.css'
 import EarthPlugin from './main';
 import {DistortableImageOverlay, CornersT} from "./DistortableImageOverlay"
-import {LatLng, Util} from "leaflet";
-import isArray = Util.isArray;
-import {layer} from "@codemirror/view";
 
 
 let DefaultGeoJSON = "```geojson\n{\n    \"type\": \"FeatureCollection\",\n    \"features\": []\n}\n```\n"
@@ -62,6 +59,88 @@ export default class EarthCodeBlockManager {
 const JPGUrlPattern = /!\[\[(?<path>.*?\.jpg)]]/
 const PreviewPattern = /!\[\[(?<path>source\/.*?)#preview]]/
 
+class TransformContext{
+	map: leaflet.Map
+	markers: leaflet.Marker[];
+
+	constructor(map: leaflet.Map) {
+		this.map = map;
+		this.markers = [];
+	}
+
+	#addMarker(e: leaflet.LeafletMouseEvent){
+		let marker = new leaflet.Marker(e.latlng, {draggable: true});
+		// @ts-ignore
+		marker._pmTempLayer = true;
+		marker.on(
+			"contextmenu",
+			() => {
+				this.map.removeLayer(marker);
+				this.markers.remove(marker);
+			}
+		)
+
+		let last_pos: leaflet.LatLng | null = null;
+
+		marker.on("dragstart", (e) => {
+			let target = e.target;
+			if (target instanceof leaflet.Marker) {
+				last_pos = target.getLatLng();
+			}
+		})
+
+		marker.on("drag", (e) => {
+			if (last_pos === null){
+				// @ts-ignore
+				last_pos = e.latlng;
+			} else {
+				// @ts-ignore
+				let new_ll: leaflet.LatLng = e.latlng;
+				let dlat = new_ll.lat - last_pos.lat;
+				let dlng = new_ll.lng - last_pos.lng;
+
+				function addDelta(latlngs: leaflet.LatLng[] | leaflet.LatLng[][] | leaflet.LatLng[][][]): leaflet.LatLng[] | leaflet.LatLng[][] {
+					return latlngs.map((ll) => {
+						if (ll instanceof leaflet.LatLng) {
+							return new leaflet.LatLng(ll.lat + dlat, ll.lng + dlng);
+						} else {
+							return addDelta(ll);
+						}
+					})
+				}
+
+				this.map.eachLayer((layer) => {
+					if (layer instanceof leaflet.Polygon) {
+						layer.setLatLngs(addDelta(layer.getLatLngs()));
+						layer.fire("edit");
+					}
+				})
+				last_pos = new_ll;
+			}
+		})
+
+		marker.on("dragend", (e) => {
+			last_pos = null;
+		})
+
+		this.markers.push(marker);
+		marker.addTo(this.map);
+	}
+
+	enable(){
+		this.map.on("click", this.#addMarker, this);
+	}
+	disable(){
+		this.map.off("click", this.#addMarker, this);
+		this.markers.forEach(
+			(marker: leaflet.Marker) => {
+				this.map.removeLayer(marker);
+			}
+		);
+		this.markers = [];
+	}
+}
+
 class GeoJSONFormatter{
 	plugin: EarthPlugin;
 
@@ -75,15 +154,27 @@ class GeoJSONFormatter{
 	blob_path?: string;
 	image_polygon?: leaflet.Polygon;
 	image_overlay?: DistortableImageOverlay;
+	transform_context: TransformContext | null;
 
 	constructor(plugin: EarthPlugin) {
 		this.plugin = plugin;
+		this.transform_context = null;
 	}
 
 	markDirty() {
 		let save_el = this.map_el.querySelector(".jgc-save")?.parentElement
 		if (save_el) {
 			save_el.style.backgroundColor = "darkorange"
+		}
+	}
+
+	async #transformClick(){
+		if (this.transform_context === null) {
+			this.transform_context = new TransformContext(this.map);
+			this.transform_context.enable();
+		} else {
+			this.transform_context.disable();
+			this.transform_context = null;
 		}
 	}
 
@@ -307,6 +398,14 @@ class GeoJSONFormatter{
 				drawText: false,
 				drawRectangle: false
 			});
+
+			this.map.pm.Toolbar.createCustomControl({
+				name: "transform",
+				title: "transform",
+				block: "edit",
+				className: "jgc-transform",
+				onClick: this.#transformClick.bind(this)
+			})
 
 			this.map.pm.Toolbar.createCustomControl({
 				name: "save",
