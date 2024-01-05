@@ -22,23 +22,41 @@ export class Database extends EventManager {
 	plugin: EarthPlugin
 	files: Map<string, File>
 	ready: boolean
+	notice: Notice | null
 
 	constructor(plugin: EarthPlugin){
 		super();
 		this.plugin = plugin;
 		this.files = new Map();
 		this.ready = false;
+		this.notice = null;
 		this.plugin.app.workspace.onLayoutReady(this.#init.bind(this));
 	}
 
 	async #init(){
-		await Promise.all(this.plugin.app.vault.getMarkdownFiles().map(f => this.#fileCreated(f)));
+		this.notice = new Notice(
+			"Scanned 0 files of " + this.plugin.app.vault.getMarkdownFiles().length.toString(),
+			0
+		);
+		await Promise.all(this.plugin.app.vault.getMarkdownFiles().map(f => this.#initFile(f)));
+		this.notice.hide();
+		this.notice = null;
 		console.log("finished scanning files.");
 		this.plugin.app.vault.on("create", this.#fileCreated.bind(this));
 		this.plugin.app.vault.on("modify", this.#fileModified.bind(this));
 		this.plugin.app.vault.on("delete", this.#fileDeleted.bind(this));
 		this.plugin.app.vault.on("rename", this.#fileRenamed.bind(this));
 		this.ready = true;
+	}
+
+	async #initFile(tfile: TAbstractFile){
+		await this.#fileCreated(tfile);
+		this.notice?.setMessage(
+			"Scanned " +
+			this.files.size.toString() +
+			" files of " +
+			this.plugin.app.vault.getMarkdownFiles().length.toString()
+		);
 	}
 
 	async #fileCreated(tfile: TAbstractFile){
